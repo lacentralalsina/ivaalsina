@@ -1,1 +1,973 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora IVA - Fabrica de Pastas</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f5f5f3;color:#1a1a1a;font-size:15px}
+.header{background:#fff;border-bottom:1px solid #e0e0d8;padding:16px 32px}
+.header h1{font-size:18px;font-weight:600}
+.header p{font-size:13px;color:#666;margin-top:2px}
+.container{max-width:960px;margin:0 auto;padding:24px 20px}
+.period-bar{display:flex;gap:12px;align-items:center;margin-bottom:20px;background:#fff;border:1px solid #e0e0d8;border-radius:10px;padding:14px 20px;flex-wrap:wrap}
+.period-bar label{font-size:13px;color:#666}
+.period-bar select{font-size:14px;padding:6px 10px;border:1px solid #d0d0c8;border-radius:6px;background:#fff}
+.tabs{display:flex;background:#fff;border-radius:10px 10px 0 0;border:1px solid #e0e0d8;overflow:hidden}
+.tab{padding:13px 24px;font-size:14px;cursor:pointer;border:none;border-bottom:3px solid transparent;background:#f9f9f7;color:#666;font-family:Arial,sans-serif}
+.tab:hover{background:#fff;color:#1a1a1a}
+.tab.active{background:#fff;color:#1a1a1a;border-bottom:3px solid #1a1a1a;font-weight:600}
+.tab-content{background:#fff;border:1px solid #e0e0d8;border-top:none;border-radius:0 0 10px 10px;padding:24px}
+.stitle{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:14px}
+label{font-size:13px;color:#555;display:block;margin-bottom:4px}
+input[type=text],input[type=number],select{width:100%;font-size:14px;padding:8px 10px;border:1px solid #d0d0c8;border-radius:6px;background:#fff;color:#1a1a1a;font-family:Arial,sans-serif}
+input:focus,select:focus{outline:none;border-color:#888}
+.frow{display:grid;gap:10px;align-items:end;margin-bottom:10px}
+.btn{padding:8px 18px;border:1px solid #c0c0b8;border-radius:6px;background:#f0f0ee;cursor:pointer;font-size:14px;color:#1a1a1a;font-family:Arial,sans-serif}
+.btn:hover{background:#e4e4e0}
+.btn-p{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.btn-p:hover{background:#333}
+.btn-g{background:#166534;color:#fff;border-color:#166534}
+.btn-g:hover{background:#14532d}
+.btn-x{padding:5px 10px;border:none;background:none;cursor:pointer;color:#aaa;font-size:15px;border-radius:6px}
+.btn-x:hover{background:#fee2e2;color:#dc2626}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+th{text-align:left;padding:8px 10px;font-size:11px;font-weight:700;color:#888;border-bottom:1px solid #e8e8e0;background:#f9f9f7;text-transform:uppercase;letter-spacing:0.04em}
+td{padding:8px 10px;border-bottom:1px solid #f0f0e8;color:#1a1a1a;vertical-align:middle}
+tr:hover td{background:#fafaf8}
+.tr{text-align:right}
+.mono{font-family:monospace}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.card{background:#f9f9f7;border:1px solid #e8e8e0;border-radius:8px;padding:16px}
+.clabel{font-size:12px;color:#888;margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em}
+.cval{font-size:22px;font-weight:700;color:#1a1a1a}
+.cval.pagar{color:#dc2626}
+.cval.favor{color:#16a34a}
+.badge{display:inline-block;padding:5px 14px;border-radius:6px;font-size:13px;font-weight:600}
+.bp{background:#fee2e2;color:#dc2626}
+.bf{background:#dcfce7;color:#16a34a}
+.bn{background:#f0f0ee;color:#888}
+.empty{text-align:center;padding:32px;font-size:13px;color:#aaa}
+.iva-preview{font-size:13px;color:#666;margin-top:8px;padding:8px 12px;background:#f9f9f7;border-radius:6px;display:none}
+.err{font-size:12px;color:#dc2626;margin-top:6px;min-height:16px}
+.ok{font-size:12px;color:#16a34a;margin-top:6px;min-height:16px}
+.info-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px 16px;font-size:13px;color:#1e40af;line-height:1.7;margin-bottom:20px}
+.proy-box{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:16px;margin-bottom:20px}
+.divider{border:none;border-top:1px solid #e8e8e0;margin:20px 0}
+.upload-zone{border:2px dashed #d0d0c8;border-radius:8px;padding:28px;text-align:center;cursor:pointer;background:#fafaf8}
+.upload-zone:hover{border-color:#888;background:#f5f5f0}
+.upload-zone p{font-size:14px;color:#555;margin-bottom:4px}
+.upload-zone small{font-size:12px;color:#aaa}
+.sep{height:20px}
+.trow{text-align:right;padding:10px;font-size:13px;font-weight:700;border-top:2px solid #e0e0d8;margin-top:4px}
+.nc-row td{color:#dc2626}
+.note{font-size:12px;color:#888;line-height:1.8;margin-top:16px}
+</style>
+</head>
+<body>
 
+<div id="login-screen" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#f5f5f3;display:flex;align-items:center;justify-content:center;z-index:9999">
+  <div style="background:#fff;border:1px solid #e0e0d8;border-radius:12px;padding:40px;text-align:center;max-width:360px;width:90%">
+    <h2 style="font-size:20px;font-weight:700;margin-bottom:6px">Calculadora IVA</h2>
+    <p style="font-size:14px;color:#666;margin-bottom:28px">Fabrica de Pastas</p>
+    <input type="password" id="login-pass" placeholder="Contrasena" style="width:100%;font-size:16px;padding:12px;border:1px solid #d0d0c8;border-radius:8px;margin-bottom:12px;text-align:center"
+      onkeydown="if(event.key==='Enter') checkLogin()">
+    <button onclick="checkLogin()" style="width:100%;padding:12px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:16px;cursor:pointer;font-family:Arial,sans-serif">Ingresar</button>
+    <p id="login-err" style="color:#dc2626;font-size:13px;margin-top:10px;min-height:18px"></p>
+  </div>
+</div>
+
+<div id="app-content" style="display:none">
+<div class="header">
+  <h1>Calculadora de IVA &mdash; Fabrica de Pastas</h1>
+  <p>Estimacion de posicion mensual de IVA</p>
+</div>
+
+<div style="background:#f0f9ff;border-bottom:1px solid #bae6fd;padding:10px 32px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+  <button class="btn btn-p" id="btn-guardar" onclick="guardarEnNube()" style="font-size:14px;padding:7px 18px">Guardar en la nube</button>
+  <button class="btn" onclick="cargarDesdeNube()" style="font-size:14px;padding:7px 18px">Cargar desde la nube</button>
+  <span id="sync-status" style="font-size:13px;color:#888"></span>
+</div>
+
+<div class="container">
+
+<div class="period-bar">
+  <label>Periodo:</label>
+  <select id="mes">
+    <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
+    <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
+    <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
+    <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+  </select>
+  <select id="anio"><option>2024</option><option>2025</option><option selected>2026</option><option>2027</option></select>
+  <span style="font-size:13px;color:#aaa;margin-left:8px" id="dias-info"></span>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('ventas')">Ventas (Tickets Z)</button>
+  <button class="tab" onclick="showTab('compras')">Compras (ARCA)</button>
+  <button class="tab" onclick="showTab('resumen')">Resumen IVA</button>
+</div>
+
+<!-- VENTAS -->
+<div id="tab-ventas" class="tab-content">
+  <div class="stitle">Importar tickets Z desde archivo</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:6px">
+    <div>
+      <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:6px">Controlador fiscal (F8011)</div>
+      <div class="upload-zone" onclick="document.getElementById('f8011-file').click()">
+        <input type="file" id="f8011-file" accept=".xlsx,.xls" style="display:none" onchange="importF8011(event)">
+        <p>Subir archivo F8011</p>
+        <small>Excel exportado del controlador fiscal</small>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:6px">Planilla propia (5 columnas)</div>
+      <div class="upload-zone" onclick="document.getElementById('manual-xls-file').click()">
+        <input type="file" id="manual-xls-file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importManualXLS(event)">
+        <p>Subir planilla propia</p>
+        <small>Fecha - N Z - Neto - IVA - Total</small>
+      </div>
+    </div>
+  </div>
+  <div class="err" id="z-import-err"></div>
+  <div class="ok"  id="z-import-ok"></div>
+
+  <div class="sep"></div>
+  <div class="stitle">Cargar ticket Z manualmente</div>
+  <div class="frow" style="grid-template-columns:130px 160px 1fr">
+    <div><label>Fecha</label><input type="text" id="z-fecha" placeholder="dd/mm" maxlength="5"></div>
+    <div><label>N ticket Z</label><input type="text" id="z-num" placeholder="Ej: Z-0045"></div>
+    <div><label>Neto gravado ($)</label><input type="text" id="z-monto" placeholder="0,00" oninput="previewIVA()" inputmode="decimal"></div>
+  </div>
+  <div class="iva-preview" id="z-preview"></div>
+  <div class="err" id="z-err"></div>
+  <button class="btn btn-p" style="margin-top:12px" onclick="addZ()">+ Agregar ticket Z</button>
+
+  <div class="sep"></div>
+  <div class="stitle">Tickets Z cargados</div>
+  <div style="overflow-x:auto">
+    <table>
+      <thead><tr><th>Fecha</th><th>N Z</th><th class="tr">Neto gravado</th><th class="tr">IVA 21%</th><th class="tr">Total</th><th></th></tr></thead>
+      <tbody id="z-body"></tbody>
+    </table>
+  </div>
+  <div id="z-empty" class="empty">No hay tickets Z cargados</div>
+  <div id="z-total-row" class="trow" style="display:none"></div>
+</div>
+
+<!-- COMPRAS -->
+<div id="tab-compras" class="tab-content" style="display:none">
+  <div class="info-box">
+    <strong>Importar desde ARCA:</strong> afip.gob.ar &rarr; ARCA &rarr; Mis Comprobantes Recibidos &rarr; filtrar por periodo &rarr; Exportar &rarr; subir el archivo aca.
+  </div>
+  <div class="stitle">Subir archivo de ARCA</div>
+  <div class="upload-zone" onclick="document.getElementById('arca-file').click()">
+    <input type="file" id="arca-file" accept=".xlsx,.xls,.csv,.txt" style="display:none" onchange="importARCA(event)">
+    <p>Hacer clic para seleccionar el archivo</p>
+    <small>Formatos: CSV, TXT o Excel exportado desde ARCA</small>
+  </div>
+  <div class="err" id="arca-err"></div>
+  <div class="ok"  id="arca-ok"></div>
+
+  <div style="margin-top:16px;font-size:13px;color:#888">
+    No tenes el archivo? <button class="btn" style="font-size:12px;padding:4px 10px" onclick="toggleManual()">Cargar manualmente</button>
+  </div>
+
+  <div id="manual-form" style="display:none;margin-top:20px;padding-top:20px;border-top:1px solid #e8e8e0">
+    <div class="stitle">Carga manual</div>
+    <div class="frow" style="grid-template-columns:130px 1fr 1fr">
+      <div><label>Fecha</label><input type="text" id="c-fecha" placeholder="dd/mm/aaaa"></div>
+      <div><label>Proveedor</label><input type="text" id="c-prov" placeholder="Nombre"></div>
+      <div><label>N comprobante</label><input type="text" id="c-num" placeholder="A-0001-00000001"></div>
+    </div>
+    <div class="frow" style="grid-template-columns:1fr 1fr 1fr auto">
+      <div><label>Neto ($)</label><input type="number" id="c-neto" placeholder="0,00" step="0.01"></div>
+      <div><label>IVA 21% ($)</label><input type="number" id="c-21" placeholder="0,00" step="0.01"></div>
+      <div><label>IVA 10.5% ($)</label><input type="number" id="c-105" placeholder="0,00" step="0.01"></div>
+      <div><label>&nbsp;</label><button class="btn btn-p" onclick="addC()">+ Agregar</button></div>
+    </div>
+    <div class="err" id="c-err"></div>
+  </div>
+
+  <div class="sep"></div>
+  <div class="stitle">Compras cargadas</div>
+  <div style="overflow-x:auto">
+    <table>
+      <thead><tr><th>Fecha</th><th>Tipo</th><th>Proveedor</th><th>Comprobante</th><th class="tr">Neto gravado</th><th class="tr">Total IVA</th><th class="tr">Imp. total</th><th></th></tr></thead>
+      <tbody id="c-body"></tbody>
+    </table>
+  </div>
+  <div id="c-empty" class="empty">No hay compras cargadas</div>
+  <div id="c-total-row" class="trow" style="display:none"></div>
+</div>
+
+<!-- RESUMEN -->
+<div id="tab-resumen" class="tab-content" style="display:none">
+  <div class="proy-box">
+    <div class="stitle" style="color:#92400e">Proyeccion al cierre del mes</div>
+    <p style="font-size:12px;color:#92400e;line-height:1.7">
+      Calcula el promedio de IVA por tipo de dia (habil / sabado / domingo) segun los tickets ya cargados,
+      y lo multiplica por los dias que faltan en el mes. Los lunes no se contemplan (dia cerrado).
+      La proyeccion se actualiza automaticamente al cargar mas tickets.
+    </p>
+    <div id="proy-detalle" style="margin-top:10px;font-size:12px;color:#92400e"></div>
+  </div>
+
+  <div class="stitle">Posicion real</div>
+  <div class="cards">
+    <div class="card"><div class="clabel">Debito fiscal</div><div class="cval" id="r-debito">$0</div></div>
+    <div class="card"><div class="clabel">Credito fiscal</div><div class="cval" id="r-credito">$0</div></div>
+    <div class="card"><div class="clabel">Saldo real</div><div class="cval" id="r-saldo">$0</div></div>
+  </div>
+  <div style="margin-bottom:16px"><span id="r-badge" class="badge bn">Sin datos</span></div>
+
+  <div class="stitle" id="proy-label">Proyeccion al cierre</div>
+  <div class="cards" id="proy-cards" style="display:none">
+    <div class="card"><div class="clabel">Debito proyectado</div><div class="cval" style="color:#2563eb" id="p-debito">$0</div></div>
+    <div class="card"><div class="clabel">Credito real</div><div class="cval" style="color:#2563eb" id="p-credito">$0</div></div>
+    <div class="card"><div class="clabel">IVA estimado</div><div class="cval" id="p-saldo">$0</div></div>
+  </div>
+  <div style="margin-bottom:20px"><span id="p-badge" class="badge bn" style="display:none"></span></div>
+
+  <div id="r-dtotal" style="display:none"></div>
+  <div id="r-ctotal" style="display:none"></div>
+  <div id="p-dtotal" style="display:none"></div>
+  <div id="p-ctotal" style="display:none"></div>
+
+  <div class="divider"></div>
+  <div class="stitle">Planificador de compras</div>
+  <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:20px;margin-bottom:20px">
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;margin-bottom:16px">
+      <label style="font-size:17px;color:#166534;font-weight:600;white-space:nowrap">IVA que quiero pagar ($)</label>
+      <input type="text" id="plan-iva-pagar" placeholder="0,00" oninput="calcPlanCompras()" inputmode="decimal"
+        style="border-color:#86efac;font-size:18px;padding:10px 14px;max-width:280px">
+    </div>
+    <div id="plan-resultado"></div>
+  </div>
+
+  <div class="divider"></div>
+  <div class="stitle">Exportar</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;padding:16px;background:#f9f9f7;border-radius:8px;border:1px solid #e8e8e0;margin-bottom:20px">
+    <button class="btn btn-g" onclick="exportXLS()">Descargar reporte XLS</button>
+    <span style="font-size:13px;color:#888;align-self:center">Incluye ventas, compras y resumen con proyeccion</span>
+  </div>
+  <div class="note">
+    <strong>Vencimiento DJ IVA:</strong> entre los dias 19 y 21 del mes siguiente segun el ultimo digito del CUIT.<br>
+    <strong>Saldo a favor:</strong> el credito supera al debito, queda para compensar periodos futuros.<br>
+    <strong>IVA a pagar:</strong> el debito supera al credito, hay que ingresar la diferencia a ARCA.
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<script>
+var IVA21 = 0.21;
+var ventas = [];
+var compras = [];
+var modoTotal = false;
+var manualVisible = false;
+var MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+// Columnas fijas del archivo ARCA (verificadas contra el archivo real)
+// 0=Fecha 1=Tipo 2=PdV 3=NroDesde 5=CAE 7=CUITEmisor 8=Proveedor
+// 24=NetoGravadoTotal 28=TotalIVA 29=ImpTotal
+var C = {fecha:0, tipo:1, pdv:2, num:3, cae:5, cuit:7, prov:8, neto:24, iva:28, total:29};
+
+function diasEnMes(m, a) { return new Date(a, m, 0).getDate(); }
+function getMes()  { return parseInt(document.getElementById('mes').value); }
+function getAnio() { return parseInt(document.getElementById('anio').value); }
+
+function fmtN(n) {
+  return '$' + (+(n)||0).toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function parseFecha(s) {
+  var p = String(s||'').split('/');
+  if (p.length === 3) return new Date(+p[2], +p[1]-1, +p[0]);
+  return new Date(0);
+}
+
+function parsePesos(v) {
+  if (v === undefined || v === null || v === '') return 0;
+  if (typeof v === 'number') return v;
+  var s = String(v).trim();
+  // Con coma: la coma es decimal, los puntos son miles
+  if (s.indexOf(',') >= 0) return parseFloat(s.replace(/\./g,'').replace(',','.')) || 0;
+  // Sin coma: si hay un solo punto con 1-2 digitos despues es decimal; sino es miles
+  var parts = s.split('.');
+  if (parts.length === 1) return parseFloat(s) || 0;
+  if (parts.length === 2 && parts[1].length <= 2) return parseFloat(s) || 0;
+  return parseFloat(s.replace(/\./g,'')) || 0;
+}
+
+function updateDiasInfo() {
+  var total = diasEnMes(getMes(), getAnio());
+  document.getElementById('dias-info').textContent = total + ' dias en el mes';
+  document.getElementById('proy-dias-mes').value = total;
+}
+
+
+
+document.getElementById('mes').addEventListener('change', updateDiasInfo);
+document.getElementById('anio').addEventListener('change', updateDiasInfo);
+
+// --- VENTAS ---
+function toggleModo() {
+  modoTotal = !modoTotal;
+  document.getElementById('z-modo-label').textContent = modoTotal ? 'Total con IVA ($)' : 'Neto gravado ($)';
+  document.getElementById('z-toggle').textContent     = modoTotal ? 'Ingresar neto' : 'Ingresar total';
+  document.getElementById('z-monto').value = '';
+  document.getElementById('z-preview').style.display = 'none';
+}
+
+function previewIVA() {
+  var v = parsePesos(document.getElementById('z-monto').value) || 0;
+  var el = document.getElementById('z-preview');
+  if (!v) { el.style.display='none'; return; }
+  var iva = v * IVA21;
+  el.style.display = 'block';
+  el.innerHTML = 'IVA 21%: <strong>' + fmtN(iva) + '</strong> &nbsp;|&nbsp; Total: <strong>' + fmtN(v+iva) + '</strong>';
+}
+
+function addZ() {
+  var fechaRaw = document.getElementById('z-fecha').value.trim();
+  var num      = document.getElementById('z-num').value.trim();
+  var raw      = document.getElementById('z-monto').value.trim();
+  var v        = parsePesos(raw);
+  var err      = document.getElementById('z-err');
+  if (!fechaRaw) { err.textContent='Completa la fecha.'; return; }
+  if (!num)      { err.textContent='Completa el numero de ticket Z.'; return; }
+  if (!v)        { err.textContent='Ingresa un monto mayor a cero.'; return; }
+  err.textContent = '';
+  // Completar año desde el periodo si solo se ingreso dd/mm
+  var fecha = fechaRaw;
+  if (/^\d{1,2}\/\d{1,2}$/.test(fechaRaw)) {
+    fecha = fechaRaw + '/' + getAnio();
+  }
+  var neto = v;
+  var iva  = v * IVA21;
+  ventas.push({fecha:fecha, num:num, neto:neto, iva:iva});
+  ventas.sort(function(a,b){return parseFecha(a.fecha)-parseFecha(b.fecha);});
+  renderZ();
+  document.getElementById('z-fecha').value = '';
+  document.getElementById('z-num').value   = '';
+  document.getElementById('z-monto').value = '';
+  document.getElementById('z-preview').style.display = 'none';
+}
+
+function delZ(i) { ventas.splice(i,1); renderZ(); }
+
+function renderZ() {
+  var body = document.getElementById('z-body');
+  document.getElementById('z-empty').style.display = ventas.length ? 'none' : 'block';
+  var html = '';
+  for (var i=0; i<ventas.length; i++) {
+    var v = ventas[i];
+    html += '<tr>'
+      + '<td>' + v.fecha + '</td>'
+      + '<td>' + v.num + '</td>'
+      + '<td class="tr mono">' + fmtN(v.neto) + '</td>'
+      + '<td class="tr mono">' + fmtN(v.iva)  + '</td>'
+      + '<td class="tr mono">' + fmtN(v.neto+v.iva) + '</td>'
+      + '<td><button class="btn-x" onclick="delZ(' + i + ')">x</button></td>'
+      + '</tr>';
+  }
+  body.innerHTML = html;
+  var tot = document.getElementById('z-total-row');
+  if (ventas.length) {
+    var tN=0, tI=0;
+    for (var j=0; j<ventas.length; j++) { tN+=ventas[j].neto; tI+=ventas[j].iva; }
+    tot.style.display = 'block';
+    tot.innerHTML = 'Neto: <strong>'+fmtN(tN)+'</strong> &nbsp;|&nbsp; IVA: <strong>'+fmtN(tI)+'</strong> &nbsp;|&nbsp; Total: <strong>'+fmtN(tN+tI)+'</strong>';
+  } else { tot.style.display='none'; }
+}
+
+// --- IMPORTAR F8011 ---
+function importF8011(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  event.target.value = '';
+  var err = document.getElementById('z-import-err');
+  var ok  = document.getElementById('z-import-ok');
+  err.textContent=''; ok.textContent='';
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var wb   = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+      var ws   = wb.Sheets[wb.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+      var hIdx = -1;
+      for (var i=0; i<rows.length; i++) {
+        for (var j=0; j<rows[i].length; j++) {
+          if (String(rows[i][j]).toLowerCase().indexOf('cierre') >= 0) { hIdx=i; break; }
+        }
+        if (hIdx >= 0) break;
+      }
+      if (hIdx < 0) { err.textContent='No se encontro la estructura del F8011.'; return; }
+      var hdr    = rows[hIdx].map(function(c){return String(c).toLowerCase();});
+      var iN=-1, iF=-1, iTotal=-1, iGrav=-1;
+      for (var k=0; k<hdr.length; k++) {
+        if (hdr[k].indexOf('cierre')>=0 && hdr[k].indexOf('fecha')<0) iN=k;
+        if (hdr[k].indexOf('fecha')>=0) iF=k;
+        if (hdr[k].indexOf('importe total')>=0 || hdr[k]==='total') iTotal=k;
+        if (hdr[k].indexOf('gravado')>=0 && hdr[k].indexOf('total')>=0 && hdr[k].indexOf('no')<0) iGrav=k;
+      }
+      var existing = {};
+      for (var v=0; v<ventas.length; v++) existing[ventas[v].num]=true;
+      var added=0, dupes=0;
+      for (var r=hIdx+1; r<rows.length; r++) {
+        var row = rows[r];
+        if (!row[iN]) continue;
+        var numZ = 'Z-' + String(row[iN]).trim();
+        if (existing[numZ]) { dupes++; continue; }
+        var rawF = row[iF];
+        var fecha = '';
+        if (typeof rawF === 'string' && rawF.indexOf('T') >= 0) {
+          var d = new Date(rawF);
+          fecha = pad2(d.getDate())+'/'+pad2(d.getMonth()+1)+'/'+d.getFullYear();
+        } else if (typeof rawF === 'number') {
+          var d2 = new Date(Math.round((rawF-25569)*86400*1000));
+          fecha = pad2(d2.getDate())+'/'+pad2(d2.getMonth()+1)+'/'+d2.getFullYear();
+        } else { fecha = String(rawF||''); }
+        var total = parsePesos(iTotal>=0?row[iTotal]:null);
+        var neto  = parsePesos(iGrav>=0?row[iGrav]:null);
+        var iva   = total - neto;
+        if (!neto && !total) continue;
+        existing[numZ] = true;
+        ventas.push({fecha:fecha, num:numZ, neto:neto, iva:iva});
+        added++;
+      }
+      ventas.sort(function(a,b){return parseFecha(a.fecha)-parseFecha(b.fecha);});
+      renderZ();
+      var msg = '';
+      if (added) msg += added+' ticket'+(added>1?'s':'')+' importado'+(added>1?'s':'')+'.';
+      if (dupes) msg += ' ('+dupes+' ya existian)';
+      if (added) ok.textContent=msg; else err.textContent='No se encontraron datos nuevos.';
+    } catch(ex) { err.textContent='Error: '+ex.message; }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function pad2(n) { return n<10?'0'+n:String(n); }
+
+// --- IMPORTAR PLANILLA PROPIA ---
+function importManualXLS(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  event.target.value = '';
+  var err = document.getElementById('z-import-err');
+  var ok  = document.getElementById('z-import-ok');
+  err.textContent=''; ok.textContent='';
+
+  function processRows(rows) {
+    var data = [];
+    for (var i=0; i<rows.length; i++) {
+      if (rows[i].some(function(c){return c!==''&&c!==null&&c!==undefined;})) data.push(rows[i]);
+    }
+    if (!data.length) { err.textContent='El archivo esta vacio.'; return; }
+    var first = String(data[0][0]||'');
+    var start = (isNaN(parseFloat(first)) && isNaN(Date.parse(first))) ? 1 : 0;
+    var existing = {};
+    for (var v=0; v<ventas.length; v++) existing[ventas[v].num]=true;
+    var added=0, dupes=0;
+    for (var r=start; r<data.length; r++) {
+      var row   = data[r];
+      var fecha = String(row[0]||'').trim();
+      var numZ  = String(row[1]||'').trim();
+      var neto  = parsePesos(row[2]);
+      var iva   = parsePesos(row[3]);
+      if (!isNaN(fecha) && fecha!=='') {
+        var d = new Date(Math.round((parseFloat(fecha)-25569)*86400*1000));
+        fecha = pad2(d.getDate())+'/'+pad2(d.getMonth()+1)+'/'+d.getFullYear();
+      }
+      if (!fecha||!numZ||(!neto&&!iva)) continue;
+      if (existing[numZ]) { dupes++; continue; }
+      existing[numZ]=true;
+      ventas.push({fecha:fecha, num:numZ, neto:neto, iva:iva});
+      added++;
+    }
+    ventas.sort(function(a,b){return parseFecha(a.fecha)-parseFecha(b.fecha);});
+    renderZ();
+    var msg='';
+    if (added) msg+=added+' ticket'+(added>1?'s':'')+' importado'+(added>1?'s':'')+'.'
+    if (dupes) msg+=' ('+dupes+' ya existian)';
+    if (added) ok.textContent=msg; else err.textContent='No se encontraron datos. Columnas esperadas: Fecha, N Z, Neto, IVA, Total.';
+  }
+
+  if (file.name.match(/\.xlsx?$/i)) {
+    var rd = new FileReader();
+    rd.onload = function(e) {
+      try {
+        var wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+        processRows(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:''}));
+      } catch(ex) { err.textContent='Error: '+ex.message; }
+    };
+    rd.readAsArrayBuffer(file);
+  } else {
+    var rd2 = new FileReader();
+    rd2.onload = function(e) {
+      var sep  = e.target.result.indexOf(';')>=0 ? ';' : ',';
+      var rows = e.target.result.split(/\r?\n/).filter(function(l){return l.trim();})
+        .map(function(l){return l.split(sep).map(function(c){return c.replace(/^"|"$/g,'').trim();});});
+      processRows(rows);
+    };
+    rd2.readAsText(file,'utf-8');
+  }
+}
+
+// --- COMPRAS ---
+function toggleManual() {
+  manualVisible = !manualVisible;
+  document.getElementById('manual-form').style.display = manualVisible ? 'block' : 'none';
+}
+
+function addC() {
+  var fecha  = document.getElementById('c-fecha').value.trim();
+  var prov   = document.getElementById('c-prov').value.trim();
+  var num    = document.getElementById('c-num').value.trim();
+  var neto   = parsePesos(document.getElementById('c-neto').value);
+  var iva21  = parsePesos(document.getElementById('c-21').value);
+  var iva105 = parsePesos(document.getElementById('c-105').value);
+  var err    = document.getElementById('c-err');
+  if (!fecha||!prov) { err.textContent='Completa fecha y proveedor.'; return; }
+  err.textContent='';
+  compras.push({fecha:fecha, prov:prov, num:num, neto:neto, iva21:iva21, iva105:iva105, total:neto+iva21+iva105, tipo:'Factura A', esNC:false, caeKey:''});
+  compras.sort(function(a,b){return parseFecha(a.fecha)-parseFecha(b.fecha);});
+  renderC();
+  ['c-fecha','c-prov','c-num','c-neto','c-21','c-105'].forEach(function(id){document.getElementById(id).value='';});
+}
+
+function delC(i) { compras.splice(i,1); renderC(); }
+
+function tipoCorto(t) {
+  var tl = String(t||'').toLowerCase();
+  if (tl.indexOf('nota de cr')>=0) return 'NC';
+  if (tl.indexOf('factura a')>=0)  return 'Fac. A';
+  if (tl.indexOf('factura b')>=0)  return 'Fac. B';
+  if (tl.indexOf('factura c')>=0)  return 'Fac. C';
+  return 'Fac.';
+}
+
+function renderC() {
+  var body = document.getElementById('c-body');
+  document.getElementById('c-empty').style.display = compras.length ? 'none' : 'block';
+  var html = '';
+  for (var i=0; i<compras.length; i++) {
+    var c   = compras[i];
+    var cls = (c.esNC || c.neto<0) ? ' class="nc-row"' : '';
+    html += '<tr' + cls + '>'
+      + '<td>' + c.fecha + '</td>'
+      + '<td style="font-size:12px">' + tipoCorto(c.tipo) + '</td>'
+      + '<td>' + c.prov + '</td>'
+      + '<td style="font-size:12px;color:#888">' + (c.num||'--') + '</td>'
+      + '<td class="tr mono">' + fmtN(c.neto) + '</td>'
+      + '<td class="tr mono">' + fmtN(c.iva21) + '</td>'
+      + '<td class="tr mono">' + fmtN(c.total||c.neto+c.iva21+(c.iva105||0)) + '</td>'
+      + '<td><button class="btn-x" onclick="delC(' + i + ')">x</button></td>'
+      + '</tr>';
+  }
+  body.innerHTML = html;
+  var tot = document.getElementById('c-total-row');
+  if (compras.length) {
+    var tN=0, tI=0, tT=0;
+    for (var j=0; j<compras.length; j++) {
+      tN += compras[j].neto;
+      tI += compras[j].iva21 + (compras[j].iva105||0);
+      tT += compras[j].total || compras[j].neto + compras[j].iva21 + (compras[j].iva105||0);
+    }
+    tot.style.display='block';
+    tot.innerHTML='Neto: <strong>'+fmtN(tN)+'</strong> &nbsp;|&nbsp; IVA: <strong>'+fmtN(tI)+'</strong> &nbsp;|&nbsp; Total: <strong>'+fmtN(tT)+'</strong>';
+  } else { tot.style.display='none'; }
+}
+
+// --- IMPORTAR ARCA ---
+function importARCA(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  event.target.value='';
+  var err = document.getElementById('arca-err');
+  var ok  = document.getElementById('arca-ok');
+  err.textContent=''; ok.textContent='';
+
+  if (file.name.match(/\.xlsx?$/i)) {
+    var rd = new FileReader();
+    rd.onload = function(e) {
+      try {
+        var wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+        var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:''});
+        processARCA(rows, err, ok);
+      } catch(ex) { err.textContent='Error: '+ex.message; }
+    };
+    rd.readAsArrayBuffer(file);
+  } else {
+    var rd2 = new FileReader();
+    rd2.onload = function(e) {
+      var sep  = e.target.result.indexOf(';')>=0 ? ';' : ',';
+      var rows = e.target.result.split(/\r?\n/).filter(function(l){return l.trim();})
+        .map(function(l){return l.split(sep).map(function(c){return c.replace(/^"|"$/g,'').trim();});});
+      processARCA(rows, err, ok);
+    };
+    rd2.readAsText(file,'utf-8');
+  }
+}
+
+function processARCA(rows, err, ok) {
+  if (rows.length<2) { err.textContent='El archivo esta vacio.'; return; }
+  // Fila 0 = titulo (1 celda), fila 1 = encabezados, datos desde fila 2
+  var dataStart = (rows[0].filter(function(c){return c;}).length <= 2) ? 2 : 1;
+
+  // Construir set de claves ya existentes
+  var existing = {};
+  for (var x=0; x<compras.length; x++) {
+    if (compras[x].caeKey) existing[compras[x].caeKey] = true;
+  }
+
+  var added=0, dupes=0;
+  for (var r=dataStart; r<rows.length; r++) {
+    var row   = rows[r];
+    var fecha = String(row[C.fecha]||'').trim();
+    var tipo  = String(row[C.tipo] ||'').trim();
+    if (!fecha || !tipo) continue;
+    var prov  = String(row[C.prov] ||'').trim() || 'Sin nombre';
+    var num   = String(row[C.num]  ||'').trim();
+    var cae   = String(row[C.cae]  ||'').trim();
+    var pdv   = String(row[C.pdv]  ||'').trim();
+    var cuit  = String(row[C.cuit] ||'').trim();
+    var neto  = parsePesos(row[C.neto]);
+    var iva   = parsePesos(row[C.iva]);
+    var total = parsePesos(row[C.total]);
+    if (!neto && !iva && !total) continue;
+    // Clave: CAE + PDV + Numero + CUIT
+    var key = cae+'|'+pdv+'|'+num+'|'+cuit;
+    if (existing[key]) { dupes++; continue; }
+    existing[key] = true;
+    var esNC = tipo.toLowerCase().indexOf('nota de cr') >= 0;
+    compras.push({fecha:fecha, prov:prov, num:num, tipo:tipo, neto:neto, iva21:iva, iva105:0, total:total, esNC:esNC, caeKey:key});
+    added++;
+  }
+  compras.sort(function(a,b){return parseFecha(a.fecha)-parseFecha(b.fecha);});
+  renderC();
+  var msg='';
+  if (added) msg+=added+' comprobante'+(added>1?'s':'')+' importado'+(added>1?'s':'')+'.'
+  if (dupes) msg+=' ('+dupes+' duplicado'+(dupes>1?'s':'')+' omitido'+(dupes>1?'s':'')+')'
+  if (added) ok.textContent=msg; else err.textContent='No se encontraron datos. Revisa el formato o carga manualmente.';
+}
+
+// --- PROYECCION POR TIPO DE DIA ---
+function tipodia(wd) {
+  // wd: 0=lunes,1=martes,...,5=sabado,6=domingo
+  if (wd === 0) return 'lunes';   // cerrado
+  if (wd === 5) return 'sabado';
+  if (wd === 6) return 'domingo';
+  return 'habil';
+}
+
+function calcProyeccion(debitoReal) {
+  if (!ventas.length) return null;
+  var mes  = getMes();
+  var anio = getAnio();
+
+  // Calcular promedios por tipo de dia a partir de ventas cargadas
+  var tot = {habil:0, sabado:0, domingo:0};
+  var cnt = {habil:0, sabado:0, domingo:0};
+  for (var i=0; i<ventas.length; i++) {
+    var p   = ventas[i].fecha.split('/');
+    if (p.length < 3) continue;
+    var dia = new Date(+p[2], +p[1]-1, +p[0]);
+    var td  = tipodia(dia.getDay()==0?6:dia.getDay()-1); // js: 0=dom,1=lun
+    // Nota: JS getDay() 0=domingo,1=lunes,...,6=sabado
+    // convertir: dom=6, lun=0, mar=1, ...
+    var jsDay = dia.getDay(); // 0=dom
+    var wd;
+    if (jsDay===0) wd=6; else wd=jsDay-1; // wd: 0=lun,6=dom
+    var tipo = tipodia(wd);
+    if (tipo === 'lunes') continue; // cerrado, no suma al promedio
+    tot[tipo] += ventas[i].iva;
+    cnt[tipo]++;
+  }
+
+  var med = {
+    habil:  cnt.habil  > 0 ? tot.habil  / cnt.habil  : 0,
+    sabado: cnt.sabado > 0 ? tot.sabado / cnt.sabado : 0,
+    domingo:cnt.domingo> 0 ? tot.domingo/ cnt.domingo: 0
+  };
+
+  // Encontrar el ultimo dia cargado
+  var ultimoDate = null;
+  for (var i=0; i<ventas.length; i++) {
+    var p = ventas[i].fecha.split('/');
+    if (p.length < 3) continue;
+    var d = new Date(+p[2], +p[1]-1, +p[0]);
+    if (!ultimoDate || d > ultimoDate) ultimoDate = d;
+  }
+  if (!ultimoDate) return null;
+
+  // Contar dias pendientes desde el dia siguiente al ultimo cargado hasta fin de mes
+  var finMes = new Date(anio, mes, 0); // ultimo dia del mes
+  var pend = {habil:0, sabado:0, domingo:0};
+  var cur  = new Date(ultimoDate.getTime() + 86400000);
+  while (cur <= finMes) {
+    var jsDay2 = cur.getDay();
+    var wd2    = jsDay2===0 ? 6 : jsDay2-1;
+    var tipo2  = tipodia(wd2);
+    if (tipo2 !== 'lunes') pend[tipo2]++;
+    cur = new Date(cur.getTime() + 86400000);
+  }
+
+  // Si no quedan dias pendientes, no proyectar
+  if (pend.habil + pend.sabado + pend.domingo === 0) return null;
+
+  var ivaProyectado = med.habil*pend.habil + med.sabado*pend.sabado + med.domingo*pend.domingo;
+  var total = debitoReal + ivaProyectado;
+
+  return {
+    total:  total,
+    phabil: pend.habil,
+    psab:   pend.sabado,
+    pdom:   pend.domingo,
+    mhabil: med.habil,
+    msab:   med.sabado,
+    mdom:   med.domingo
+  };
+}
+
+// --- RESUMEN ---
+function calcResumen() {
+  var debito=0, credito=0;
+  for (var v=0; v<ventas.length; v++)  debito  += ventas[v].iva;
+  for (var c=0; c<compras.length; c++) credito += compras[c].iva21 + (compras[c].iva105||0);
+  var saldo = debito - credito;
+
+  document.getElementById('r-debito').textContent  = fmtN(debito);
+  document.getElementById('r-credito').textContent = fmtN(credito);
+  document.getElementById('r-saldo').textContent   = fmtN(Math.abs(saldo));
+  document.getElementById('r-dtotal').textContent  = fmtN(debito);
+  document.getElementById('r-ctotal').textContent  = fmtN(credito);
+
+  var sEl   = document.getElementById('r-saldo');
+  var badge = document.getElementById('r-badge');
+  if (!ventas.length && !compras.length) {
+    sEl.className='cval'; badge.className='badge bn'; badge.textContent='Sin datos';
+  } else if (Math.abs(saldo)<0.01) {
+    sEl.className='cval'; badge.className='badge bn'; badge.textContent='Saldo cero';
+  } else if (saldo>0) {
+    sEl.className='cval pagar'; badge.className='badge bp'; badge.textContent='IVA a pagar: '+fmtN(saldo);
+  } else {
+    sEl.className='cval favor'; badge.className='badge bf'; badge.textContent='Saldo a favor: '+fmtN(-saldo);
+  }
+
+  var pCards = document.getElementById('proy-cards');
+  var pBadge = document.getElementById('p-badge');
+
+  // Proyeccion ponderada por tipo de dia (habil / sabado / domingo)
+  // Lunes = cerrado, no se proyecta
+  var proy = calcProyeccion(debito);
+  if (proy) {
+    var pDebito = proy.total;
+    var pSaldo  = pDebito - credito;
+    document.getElementById('p-debito').textContent  = fmtN(pDebito);
+    document.getElementById('p-credito').textContent = fmtN(credito);
+    document.getElementById('p-saldo').textContent   = fmtN(Math.abs(pSaldo));
+    document.getElementById('p-saldo').className     = 'cval '+(pSaldo>0.01?'pagar':pSaldo<-0.01?'favor':'');
+    document.getElementById('p-dtotal').textContent  = fmtN(pDebito);
+    document.getElementById('p-ctotal').textContent  = fmtN(credito);
+    document.getElementById('proy-label').textContent = 'Proyeccion al cierre del mes';
+    var det=document.getElementById('proy-detalle');
+    if(det) det.innerHTML='Promedio &mdash; Habil: <strong>'+fmtN(proy.mhabil)+'</strong> | Sabado: <strong>'+fmtN(proy.msab)+'</strong> | Domingo: <strong>'+fmtN(proy.mdom)+'</strong><br>Pendientes &mdash; Habiles: <strong>'+proy.phabil+'</strong> | Sabados: <strong>'+proy.psab+'</strong> | Domingos: <strong>'+proy.pdom+'</strong>';
+    pCards.style.display='grid'; pBadge.style.display='inline-block';
+    if (Math.abs(pSaldo)<0.01) { pBadge.className='badge bn'; pBadge.textContent='Saldo proyectado cero'; }
+    else if (pSaldo>0)         { pBadge.className='badge bp'; pBadge.textContent='IVA estimado a pagar: '+fmtN(pSaldo); }
+    else                       { pBadge.className='badge bf'; pBadge.textContent='Saldo a favor estimado: '+fmtN(-pSaldo); }
+  } else {
+    pCards.style.display='none'; pBadge.style.display='none';
+    document.getElementById('p-dtotal').textContent='--';
+    document.getElementById('p-ctotal').textContent='--';
+  }
+}
+
+// --- PLANIFICADOR DE COMPRAS ---
+function calcPlanCompras() {
+  var el = document.getElementById('plan-resultado');
+  if (!el) return;
+  var ivaPagar = parsePesos(document.getElementById('plan-iva-pagar').value);
+
+  var proy   = calcProyeccion(ventas.reduce(function(s,v){return s+v.iva;},0));
+  var debito = proy ? proy.total : ventas.reduce(function(s,v){return s+v.iva;},0);
+  var creditoActual = compras.reduce(function(s,c){return s+c.iva21+(c.iva105||0);},0);
+
+  if (!debito) {
+    el.innerHTML = '<p style="font-size:16px;color:#166534">Carga tickets de ventas primero.</p>';
+    return;
+  }
+
+  var creditoNecesario = debito - ivaPagar;
+  var creditoFaltante  = creditoNecesario - creditoActual;
+  var esProy = !!proy;
+
+  if (ivaPagar < 0 || creditoNecesario < 0) {
+    el.innerHTML = '<p style="font-size:16px;color:#dc2626">El maximo saldo a favor posible es <strong>' + fmtN(debito) + '</strong>.</p>';
+    return;
+  }
+
+  var html = '';
+
+  if (creditoFaltante <= 0) {
+    // Ya tiene suficientes compras
+    html = '<div style="background:#dcfce7;border-radius:8px;padding:16px 20px">'
+      + '<p style="font-size:20px;font-weight:700;color:#166534;line-height:1.5">'
+      + 'Con las compras que ya tenes vas a quedar con un <span style="font-size:22px">saldo a favor de ' + fmtN(-creditoFaltante) + '</span>'
+      + '</p>'
+      + '<p style="font-size:14px;color:#166534;margin-top:8px">Debito fiscal ' + (esProy?'proyectado':'real') + ': ' + fmtN(debito) + ' &nbsp;|&nbsp; Credito actual: ' + fmtN(creditoActual) + '</p>'
+      + '</div>';
+  } else {
+    var totalCompras = (creditoFaltante / 0.21) * 1.21;
+    html = '<div style="background:#fff;border:2px solid #86efac;border-radius:8px;padding:16px 20px">'
+      + '<p style="font-size:22px;font-weight:700;color:#166534;line-height:1.6">'
+      + 'Para pagar <span style="font-size:24px;color:#dc2626">' + fmtN(ivaPagar) + '</span> de IVA'
+      + ' tenes que hacer compras por <span style="font-size:24px;color:#166534">' + fmtN(totalCompras) + '</span> (IVA incluido)'
+      + '</p>'
+      + '<p style="font-size:15px;color:#555;margin-top:10px;line-height:1.7">'
+      + 'Debito fiscal ' + (esProy?'proyectado':'real') + ': <strong>' + fmtN(debito) + '</strong>'
+      + ' &nbsp;|&nbsp; Credito ya cargado: <strong>' + fmtN(creditoActual) + '</strong>'
+      + ' &nbsp;|&nbsp; Credito que te falta generar: <strong>' + fmtN(creditoFaltante) + '</strong>'
+      + '</p>'
+      + '</div>';
+  }
+  el.innerHTML = html;
+}
+
+// --- EXPORTAR XLS ---
+function exportXLS() {
+  var wb=XLSX.utils.book_new(), mes=getMes(), anio=getAnio(), nom=MESES[mes-1];
+  var tVN=0,tVI=0;
+  for(var v=0;v<ventas.length;v++){tVN+=ventas[v].neto;tVI+=ventas[v].iva;}
+  var vRows=[['VENTAS - TICKETS Z','','','',''],['Periodo:',nom+' '+anio,'','',''],[''],['Fecha','N Ticket Z','Neto gravado','IVA 21%','Total']];
+  for(var v=0;v<ventas.length;v++) vRows.push([ventas[v].fecha,ventas[v].num,+ventas[v].neto.toFixed(2),+ventas[v].iva.toFixed(2),+(ventas[v].neto+ventas[v].iva).toFixed(2)]);
+  vRows.push([''],['TOTALES','',+tVN.toFixed(2),+tVI.toFixed(2),+(tVN+tVI).toFixed(2)]);
+  var wsV=XLSX.utils.aoa_to_sheet(vRows); wsV['!cols']=[{wch:14},{wch:14},{wch:18},{wch:14},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,wsV,'Ventas');
+
+  var tCN=0,tCI=0,tCT=0;
+  for(var c=0;c<compras.length;c++){tCN+=compras[c].neto;tCI+=compras[c].iva21;tCT+=compras[c].total||compras[c].neto+compras[c].iva21;}
+  var cRows=[['COMPRAS - ARCA','','','','',''],['Periodo:',nom+' '+anio,'','','',''],[''],['Fecha','Tipo','Proveedor','Comprobante','Neto','Total IVA','Imp. Total']];
+  for(var c=0;c<compras.length;c++) cRows.push([compras[c].fecha,tipoCorto(compras[c].tipo),compras[c].prov,compras[c].num,+compras[c].neto.toFixed(2),+compras[c].iva21.toFixed(2),+(compras[c].total||compras[c].neto+compras[c].iva21).toFixed(2)]);
+  cRows.push([''],['TOTALES','','','',+tCN.toFixed(2),+tCI.toFixed(2),+tCT.toFixed(2)]);
+  var wsC=XLSX.utils.aoa_to_sheet(cRows); wsC['!cols']=[{wch:14},{wch:8},{wch:30},{wch:22},{wch:14},{wch:12},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,wsC,'Compras');
+
+  var saldo=tVI-tCI;
+  var dC=parseFloat(document.getElementById('proy-dias-carg').value)||0;
+  var dM=parseFloat(document.getElementById('proy-dias-mes').value)||diasEnMes(mes,anio);
+  var factor=dC>0?dM/dC:0;
+  var pD=factor?tVI*factor:0, pS=pD-tCI;
+  var rRows=[['RESUMEN IVA - '+nom.toUpperCase()+' '+anio],[''],
+    ['POSICION REAL'],['Debito fiscal','',+tVI.toFixed(2)],['Credito fiscal','',+tCI.toFixed(2)],
+    ['SALDO REAL','',+saldo.toFixed(2)],['Situacion','',saldo>0.01?'IVA A PAGAR':saldo<-0.01?'SALDO A FAVOR':'CERO'],['']
+  ];
+  if(factor>0) rRows=rRows.concat([
+    ['PROYECCION AL CIERRE'],['Dias cargados',dC],['Dias del mes',dM],['Factor','x'+factor.toFixed(4)],[''],
+    ['Debito proyectado','',+pD.toFixed(2)],['Credito real','',+tCI.toFixed(2)],
+    ['IVA ESTIMADO','',+pS.toFixed(2)],['Situacion',pS>0.01?'IVA A PAGAR':pS<-0.01?'SALDO A FAVOR':'CERO']
+  ]);
+  var wsR=XLSX.utils.aoa_to_sheet(rRows); wsR['!cols']=[{wch:35},{wch:16},{wch:16}];
+  XLSX.utils.book_append_sheet(wb,wsR,'Resumen IVA');
+  XLSX.writeFile(wb,'IVA_'+nom+'_'+anio+'.xlsx');
+}
+
+// --- TABS ---
+function showTab(t) {
+  var names=['ventas','compras','resumen'];
+  var tabs=document.querySelectorAll('.tab');
+  for(var i=0;i<names.length;i++){
+    document.getElementById('tab-'+names[i]).style.display = names[i]===t ? 'block' : 'none';
+    tabs[i].classList.toggle('active', names[i]===t);
+  }
+  if(t==='resumen') { calcResumen(); calcPlanCompras(); }
+}
+
+// --- LOGIN ---
+var PASS = 'ravioles2846';
+function checkLogin() {
+  var v = document.getElementById('login-pass').value;
+  if (v === PASS) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-content').style.display = 'block';
+    cargarDesdeNube();
+  } else {
+    document.getElementById('login-err').textContent = 'Contrasena incorrecta';
+    document.getElementById('login-pass').value = '';
+    document.getElementById('login-pass').focus();
+  }
+}
+
+// --- GOOGLE SHEETS SYNC ---
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwpl9CJJyylEVckVs4rlHFYWU49Pxw0ixiNgerLdq74n7CiT3w9RpCC9ZQoDgokDlPJ/exec';
+
+function guardarEnNube() {
+  var btn = document.getElementById('btn-guardar');
+  if (btn) { btn.textContent = 'Guardando...'; btn.disabled = true; }
+  var payload = JSON.stringify({ ventas: ventas, compras: compras });
+  var url = SCRIPT_URL + '?action=save&payload=' + encodeURIComponent(payload);
+  fetch(url)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var st = document.getElementById('sync-status');
+      if (data.ok) {
+        if (st) { st.textContent = 'Guardado en la nube ' + new Date().toLocaleTimeString('es-AR'); st.style.color='#16a34a'; }
+      } else {
+        if (st) { st.textContent = 'Error al guardar'; st.style.color='#dc2626'; }
+      }
+    })
+    .catch(function(){
+      var st = document.getElementById('sync-status');
+      if (st) { st.textContent = 'Error de conexion'; st.style.color='#dc2626'; }
+    })
+    .finally(function(){
+      if (btn) { btn.textContent = 'Guardar en la nube'; btn.disabled = false; }
+    });
+}
+
+function cargarDesdeNube() {
+  var st = document.getElementById('sync-status');
+  if (st) { st.textContent = 'Cargando datos...'; st.style.color='#2563eb'; }
+  var url = SCRIPT_URL + '?action=load';
+  fetch(url)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (!data.ok) { if(st) { st.textContent='Error al cargar'; st.style.color='#dc2626'; } return; }
+      // Ventas: fecha, num, neto, iva
+      ventas.length = 0;
+      (data.data.Ventas||[]).forEach(function(r){
+        if (!r[0]) return;
+        ventas.push({fecha:String(r[0]), num:String(r[1]), neto:parseFloat(r[2])||0, iva:parseFloat(r[3])||0});
+      });
+      // Compras: fecha, prov, num, tipo, neto, iva21, iva105, total, caeKey
+      compras.length = 0;
+      (data.data.Compras||[]).forEach(function(r){
+        if (!r[0]) return;
+        compras.push({fecha:String(r[0]), prov:String(r[1]), num:String(r[2]), tipo:String(r[3]),
+          neto:parseFloat(r[4])||0, iva21:parseFloat(r[5])||0, iva105:parseFloat(r[6])||0,
+          total:parseFloat(r[7])||0, caeKey:String(r[8]||''), esNC:false});
+      });
+      renderZ(); renderC();
+      if (st) { st.textContent = 'Datos cargados ' + new Date().toLocaleTimeString('es-AR'); st.style.color='#16a34a'; }
+    })
+    .catch(function(){
+      if (st) { st.textContent = 'Sin conexion — trabajando sin nube'; st.style.color='#888'; }
+    });
+}
+
+// --- INIT ---
+var now=new Date();
+document.getElementById('mes').value=now.getMonth()+1;
+document.getElementById('proy-dias-carg').value=now.getDate();
+updateDiasInfo();
+renderZ();
+renderC();
+</script>
+</div><!-- /app-content -->
+</body>
+</html>
